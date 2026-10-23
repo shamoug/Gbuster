@@ -48,6 +48,10 @@ section .lede{color:#9aa0d4;font-weight:700;margin-bottom:28px;max-width:560px}
 .step h3{font-size:17px;margin-bottom:6px}
 .step p{font-size:14.5px;color:#aab0e8;font-weight:600}
 
+/* AR shots */
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.shots img{width:100%;border-radius:22px;border:1.5px solid #30356b;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+
 /* roster */
 .roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
 .gcard{background:var(--panel);border:1.5px solid #30356b;border-radius:20px;padding:18px;text-align:center}
@@ -110,6 +114,18 @@ footer{border-top:1.5px solid #2c3166;padding:26px 0 40px;color:#8e93c4;font-wei
 </section>
 
 <section style="background:var(--night2)">
+  <div class="wrap">
+    <h2>In your camera</h2>
+    <p class="lede">Inside 75 meters the hunt goes to augmented reality: the ghost floats over your live camera view, dodging while you hold the lightning stream on it. Simulated previews; in play, the background is whatever your camera sees.</p>
+    <div class="shots">
+      <img src="shots/ar-example-1-street-blast.png" alt="AR capture view: Blinky Bloo over a night street, lightning stream firing" loading="lazy">
+      <img src="shots/ar-example-2-myrtle-park.png" alt="AR capture view: Myrtle floating in a morning park" loading="lazy">
+      <img src="shots/ar-example-3-boss-crew.png" alt="AR capture view: boss Gloombert with crew boost active" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<section>
   <div class="wrap">
     <h2>The cast</h2>
     <p class="lede">Eight original spooks, from pushovers to a boss that wants your whole crew. Myrtle only drifts out at breakfast time, 6 to 11 am.</p>

@@ -34,7 +34,7 @@ button{font-family:inherit;border:0;cursor:pointer;color:inherit;background:none
 
 /* ---------- map ---------- */
 #map{flex:1;background:#0a0c1e}
-.leaflet-tile{filter:brightness(.62) saturate(.5) hue-rotate(195deg) contrast(1.05)}
+.leaflet-tile{filter:saturate(.92) contrast(1.04)}
 .leaflet-control-attribution{background:rgba(14,16,38,.7)!important;color:#8e93c4!important;font-size:9px}
 .leaflet-control-attribution a{color:#aab0e8!important}
 
@@ -59,7 +59,16 @@ button{font-family:inherit;border:0;cursor:pointer;color:inherit;background:none
 
 /* ghost + player markers */
 .gmark{filter:drop-shadow(0 0 7px rgba(92,242,200,.8))}
+.gmark::before{content:"";position:absolute;inset:-16px;border-radius:50%;
+  background:radial-gradient(circle,rgba(92,242,200,.30),rgba(92,242,200,.10) 55%,transparent 72%)}
+.gmark.rare{filter:drop-shadow(0 0 9px rgba(185,167,242,.9))}
+.gmark.rare::before{background:radial-gradient(circle,rgba(185,167,242,.34),rgba(185,167,242,.12) 55%,transparent 72%)}
+.gmark.boss::before{inset:-22px;background:radial-gradient(circle,rgba(255,182,77,.36),rgba(255,182,77,.12) 55%,transparent 72%)}
 .gmark svg{animation:bob 2.4s ease-in-out infinite}
+.gmark.near svg{animation:bob 1.2s ease-in-out infinite}
+.gmark.near::after{content:"";position:absolute;inset:-8px;border-radius:50%;
+  border:2px solid rgba(92,242,200,.55);animation:ping 1.6s ease-out infinite}
+@keyframes ping{0%{transform:scale(.7);opacity:.9}100%{transform:scale(1.5);opacity:0}}
 .gmark.boss svg{animation:bob 3.2s ease-in-out infinite;filter:drop-shadow(0 0 12px rgba(255,182,77,.9))}
 .gmark.far{opacity:.62}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
@@ -114,9 +123,14 @@ input[type=text]:focus{border-color:var(--ecto)}
 #noCam{position:absolute;inset:0;background:
   radial-gradient(130% 90% at 50% 110%,#232a5e 0%,#12142e 55%,#07081a 100%)}
 #noCam::after{content:"";position:absolute;inset:0;background-image:radial-gradient(1.5px 1.5px at 18% 22%,#fff8 50%,#0000 51%),radial-gradient(1px 1px at 72% 15%,#fff7 50%,#0000 51%),radial-gradient(1.5px 1.5px at 88% 42%,#fff6 50%,#0000 51%),radial-gradient(1px 1px at 35% 8%,#fff8 50%,#0000 51%),radial-gradient(1px 1px at 55% 30%,#fff5 50%,#0000 51%)}
-#ghostHolder{position:absolute;left:0;top:0;will-change:transform;transition:filter .2s}
-#ghostHolder.hit{filter:brightness(2.2) drop-shadow(0 0 18px #5cf2c8)}
+#camWrap::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;
+  background:radial-gradient(120% 90% at 50% 42%,transparent 52%,rgba(5,6,20,.5) 100%)}
+#ghostHolder{position:absolute;left:0;top:0;will-change:transform;transition:filter .2s;z-index:6}
+#ghostHolder.hit{filter:brightness(1.6) drop-shadow(0 0 18px #5cf2c8)}
+#ghostHolder.hit svg{animation:shake .14s infinite}
+@keyframes shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-3px,2px)}50%{transform:translate(3px,-2px)}75%{transform:translate(-2px,-2px)}}
 #ghostHolder svg{width:100%;height:100%;filter:drop-shadow(0 0 16px rgba(185,167,242,.75))}
+#beamCanvas{z-index:7}
 #beamCanvas{position:absolute;inset:0;pointer-events:none}
 #huntTop{position:absolute;top:calc(10px + env(safe-area-inset-top));left:12px;right:12px;display:flex;align-items:center;gap:10px;z-index:30}
 #huntTop .chip{font-size:12.5px}
@@ -400,8 +414,9 @@ const CATCH_RANGE = 75; // meters
 function initMap(){
   if(typeof L==="undefined"){ toast("Map library could not load. Check your connection and reload.",6000); return; }
   map = L.map("map",{zoomControl:false,attributionControl:true}).setView([40.9115,-73.7824],16);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    {maxZoom:20, subdomains:"abcd",
+     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(map);
   gLayer = L.layerGroup().addTo(map);
   map.on("dragstart",()=>follow=false);
   if(!navigator.geolocation){ toast("This phone has no location service."); return; }
@@ -441,7 +456,7 @@ function refreshGhosts(){
     if(d>650) continue;
     const near = d<=CATCH_RANGE;
     const mk = L.marker([g.lat,g.lng],{icon:L.divIcon({
-      className:"gmark"+(g.sp.rar==="b"?" boss":"")+(near?"":" far"),
+      className:"gmark"+(g.sp.rar==="b"?" boss":"")+(g.sp.rar==="r"||g.sp.rar==="s"?" rare":"")+(near?" near":" far"),
       html:ghostSVG(g.sp, g.sp.rar==="b"?56:40),
       iconSize:[g.sp.rar==="b"?56:40,g.sp.rar==="b"?56:40], iconAnchor:[g.sp.rar==="b"?28:20,g.sp.rar==="b"?28:20]
     })}).addTo(gLayer);
@@ -552,6 +567,15 @@ function huntLoop(now){
     const hit = Math.hypot(H.aimX-px,H.aimY-py) < sz*.55;
     gh.classList.toggle("hit",hit);
     if(hit){
+      // impact sparks
+      for(let i=0;i<5;i++){
+        const a=Math.random()*6.28, r1=6+Math.random()*8, r2=r1+8+Math.random()*16;
+        ctx.beginPath();
+        ctx.moveTo(H.aimX+Math.cos(a)*r1, H.aimY+Math.sin(a)*r1);
+        ctx.lineTo(H.aimX+Math.cos(a)*r2, H.aimY+Math.sin(a)*r2);
+        ctx.strokeStyle=Math.random()<.5?"#fff":"#5cf2c8";
+        ctx.lineWidth=1.6; ctx.shadowColor="#5cf2c8"; ctx.shadowBlur=8; ctx.stroke();
+      }
       const dmg=(.42+level()*.05)*crewBoost();
       H.hp-=dmg;
       if(navigator.vibrate && Math.random()<.1) navigator.vibrate(8);
