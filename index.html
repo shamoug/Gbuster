@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0e1026">
+<title>Ghost Buster GO</title>
+<meta name="description" content="A free AR ghost-hunting game for your phone. Walk your real streets, find ghosts on the map, and blast them through your camera.">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--night:#0e1026;--night2:#181b3a;--panel:#1e2147;--ecto:#5cf2c8;--amber:#ffb64d;--bone:#f3efff;--lav:#b9a7f2}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--night);color:var(--bone);font-family:"Nunito",system-ui,sans-serif;line-height:1.6}
+h1,h2,h3{font-family:"Titan One","Arial Rounded MT Bold",Verdana,sans-serif;font-weight:400;letter-spacing:.02em}
+a{color:var(--ecto)}
+.wrap{max-width:960px;margin:0 auto;padding:0 22px}
+
+/* hero */
+.hero{position:relative;overflow:hidden;text-align:center;padding:72px 0 64px;
+  background:radial-gradient(130% 100% at 50% 0%,#283066 0%,var(--night) 62%)}
+.hero .stars{position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(1.5px 1.5px at 15% 25%,#fff8 50%,#0000 51%),radial-gradient(1px 1px at 70% 18%,#fff7 50%,#0000 51%),radial-gradient(1.5px 1.5px at 85% 55%,#fff5 50%,#0000 51%),radial-gradient(1px 1px at 30% 60%,#fff6 50%,#0000 51%),radial-gradient(1px 1px at 50% 10%,#fff8 50%,#0000 51%),radial-gradient(1.5px 1.5px at 8% 75%,#fff5 50%,#0000 51%)}
+.hero .ghost{width:150px;height:150px;margin:0 auto 6px;animation:drift 4s ease-in-out infinite}
+@keyframes drift{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-14px) rotate(2deg)}}
+@media (prefers-reduced-motion: reduce){.hero .ghost{animation:none}}
+.hero h1{font-size:clamp(40px,8vw,66px);line-height:1.05}
+.hero h1 .g{color:var(--ecto);text-shadow:0 0 26px rgba(92,242,200,.5)}
+.hero p{max-width:460px;margin:16px auto 28px;font-weight:700;color:#aab0e8;font-size:17px}
+.play{display:inline-block;background:var(--ecto);color:#06281f;font-family:"Titan One";font-size:19px;
+  padding:16px 44px;border-radius:999px;text-decoration:none;box-shadow:0 0 34px rgba(92,242,200,.45);
+  transition:transform .1s}
+.play:active{transform:scale(.96)}
+.hero .hint{display:block;margin-top:14px;font-size:13.5px;color:#8e93c4;font-weight:800}
+
+section{padding:58px 0}
+section h2{font-size:30px;margin-bottom:8px}
+section .lede{color:#9aa0d4;font-weight:700;margin-bottom:28px;max-width:560px}
+
+/* how to play — a real sequence, numbered */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.step{background:var(--panel);border:1.5px solid #30356b;border-radius:20px;padding:20px}
+.step b.n{display:inline-flex;width:32px;height:32px;border-radius:50%;background:var(--night2);
+  color:var(--ecto);align-items:center;justify-content:center;font-size:15px;margin-bottom:10px;border:1.5px solid #3b4184}
+.step h3{font-size:17px;margin-bottom:6px}
+.step p{font-size:14.5px;color:#aab0e8;font-weight:600}
+
+/* roster */
+.roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.gcard{background:var(--panel);border:1.5px solid #30356b;border-radius:20px;padding:18px;text-align:center}
+.gcard .art{height:104px;display:flex;align-items:center;justify-content:center}
+.gcard h3{font-size:16px;margin:8px 0 2px}
+.gcard .rar{font-size:11.5px;font-weight:900;border-radius:8px;padding:2px 9px;display:inline-block;margin-bottom:8px}
+.rar.c{background:#2a4d6e;color:#9fd4ff}.rar.u{background:#2a6e52;color:#9fffd4}
+.rar.r{background:#5b2a6e;color:#e49fff}.rar.s{background:#6e5a2a;color:#ffe49f}.rar.b{background:#6e2a39;color:#ff9fb0}
+.gcard p{font-size:13.5px;color:#9aa0d4;font-weight:600}
+.gcard.boss{grid-column:1/-1;display:flex;gap:22px;align-items:center;text-align:left;
+  background:linear-gradient(120deg,#1e2147,#203a35);border-color:#2a6e52}
+.gcard.boss .art{height:auto;flex:none}
+.gcard.boss p{font-size:14.5px}
+
+/* install */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.col{background:var(--panel);border:1.5px solid #30356b;border-radius:20px;padding:22px}
+.col h3{font-size:17px;margin-bottom:10px}
+.col ol{margin-left:20px;font-weight:600;color:#c5c9f0;font-size:14.5px}
+.col ol li{margin-bottom:6px}
+
+footer{border-top:1.5px solid #2c3166;padding:26px 0 40px;color:#8e93c4;font-weight:700;font-size:13.5px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="stars"></div>
+  <div class="wrap">
+    <div class="ghost" id="heroGhost"></div>
+    <h1>Ghost Buster <span class="g">GO</span></h1>
+    <p>Your neighborhood is haunted. Walk your real streets, track ghosts on a live map, then raise your camera and trap them with a lightning stream.</p>
+    <a class="play" href="play/">▶ Play now</a>
+    <span class="hint">Free · runs in your phone browser · no app store needed</span>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>How a hunt works</h2>
+    <p class="lede">Four steps from your couch to your first capture.</p>
+    <div class="steps">
+      <div class="step"><b class="n">1</b><h3>Open the map</h3><p>The game reads your GPS and spawns ghosts on the actual streets around you. Everyone in the same spot sees the same ghosts.</p></div>
+      <div class="step"><b class="n">2</b><h3>Walk to one</h3><p>Get inside your glowing 75-meter ring. Rare ghosts drift farther out, so a real walk pays off.</p></div>
+      <div class="step"><b class="n">3</b><h3>Raise your camera</h3><p>Tap the ghost and your camera opens. The ghost floats over the real world in front of you, dodging as you aim.</p></div>
+      <div class="step"><b class="n">4</b><h3>Blast it</h3><p>Hold the BLAST button to fire your lightning stream. Keep it on target, watch your heat gauge, and drain the ghost before it slips away.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--night2)">
+  <div class="wrap">
+    <h2>The cast</h2>
+    <p class="lede">Eight original spooks, from pushovers to a boss that wants your whole crew. Myrtle only drifts out at breakfast time, 6 to 11 am.</p>
+    <div class="roster" id="roster"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Hunt as a crew</h2>
+    <p class="lede">Set a shared crew name with your friends. Every crewmate active in the last ten minutes stacks +0.5× onto your lightning stream, up to double power. That is how you melt Gloombert. A free shared ledger keeps one leaderboard for everyone.</p>
+    <h2 style="margin-top:46px">Put it on your home screen</h2>
+    <div class="cols">
+      <div class="col"><h3>iPhone</h3><ol><li>Open the game in Safari</li><li>Tap Share</li><li>Tap "Add to Home Screen"</li></ol></div>
+      <div class="col"><h3>Android</h3><ol><li>Open the game in Chrome</li><li>Tap the ⋮ menu</li><li>Tap "Add to Home screen" / "Install app"</li></ol></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Ghost Buster GO · an open-source AR game · <a href="https://github.com/shamoug/Gbuster">source on GitHub</a><br>
+    Map data © OpenStreetMap contributors. Original characters, no franchise affiliation.
+  </div>
+</footer>
+
+<script>
+/* shared ghost art, kept in sync with the game roster */
+const SPECIES=[
+ {id:"blinky",name:"Blinky Bloo",rar:"c",body:"#8fd8ff",desc:"A nervous little blob. Blinks a lot. Mostly harmless."},
+ {id:"snacker",name:"Snacker",rar:"c",body:"#aef29b",desc:"Haunts bakeries and crumbs. Will trade dignity for a croissant."},
+ {id:"grumble",name:"Grumble",rar:"u",body:"#9aa0d4",desc:"A storm cloud with opinions. Mutters constantly."},
+ {id:"zappy",name:"Zappy",rar:"u",body:"#ffe49f",desc:"Static-charged and twitchy. Eats your beam for breakfast if you let go."},
+ {id:"fog",name:"Professor Fog",rar:"r",body:"#c9c2e8",desc:"Wears a monocle. Corrects your grammar while dodging."},
+ {id:"shiver",name:"Madame Shiver",rar:"r",body:"#b9a7f2",desc:"Elegant, icy, unimpressed by your aim."},
+ {id:"myrtle",name:"Myrtle",rar:"s",body:"#f2b9d4",desc:"A sweet grandmother ghost, teacup in hand. Mornings only."},
+ {id:"gloom",name:"Gloombert the Grand",rar:"b",body:"#7ee8c9",desc:"Huge, round, one snaggletooth, surprisingly polite. Solo hunters bounce off him; crews with stacked lightning streams bring him down. Worth 400 XP."}
+];
+const RAR={c:"Common",u:"Uncommon",r:"Rare",s:"Special",b:"Boss"};
+function ghostSVG(sp,s){
+  const boss=sp.rar==="b",myr=sp.id==="myrtle";
+  const eyes=sp.id==="blinky"?`<circle cx="38" cy="44" r="6" fill="#102"/><circle cx="62" cy="44" r="6" fill="#102"/>`
+    :boss?`<circle cx="36" cy="42" r="8" fill="#0a2a20"/><circle cx="64" cy="42" r="8" fill="#0a2a20"/><circle cx="38.5" cy="39.5" r="2.6" fill="#fff"/><circle cx="66.5" cy="39.5" r="2.6" fill="#fff"/>`
+    :`<circle cx="38" cy="44" r="5.5" fill="#1a1636"/><circle cx="62" cy="44" r="5.5" fill="#1a1636"/><circle cx="40" cy="42" r="1.8" fill="#fff"/><circle cx="64" cy="42" r="1.8" fill="#fff"/>`;
+  const mouth=boss?`<path d="M34 60 Q50 74 66 60 Q58 66 50 65 Q42 66 34 60z" fill="#0a2a20"/><path d="M44 63 l5 8 5-8z" fill="#fff"/>`
+    :sp.id==="grumble"?`<path d="M40 62 Q50 55 60 62" stroke="#1a1636" stroke-width="3.4" fill="none" stroke-linecap="round"/>`
+    :`<path d="M41 58 Q50 66 59 58" stroke="#1a1636" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
+  const extras=sp.id==="fog"?`<circle cx="62" cy="44" r="10.5" fill="none" stroke="#f3efff" stroke-width="2.4"/><line x1="70" y1="51" x2="76" y2="62" stroke="#f3efff" stroke-width="2"/>`
+    :sp.id==="zappy"?`<path d="M50 4 l-6 12 h8 l-7 13" stroke="#ffb64d" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+    :sp.id==="shiver"?`<path d="M28 30 Q50 16 72 30 L68 24 Q50 12 32 24z" fill="#8f7ddb"/>`
+    :myr?`<path d="M26 32 Q50 14 74 32 L74 27 Q50 8 26 27z" fill="#d998b8"/><circle cx="78" cy="58" r="8" fill="#fff" stroke="#d998b8" stroke-width="2"/><path d="M85 56 q6 2 0 6" fill="none" stroke="#d998b8" stroke-width="2"/>`
+    :sp.id==="snacker"?`<circle cx="68" cy="60" r="2" fill="#7a5b2e"/><circle cx="31" cy="55" r="1.8" fill="#7a5b2e"/>`:"";
+  const crown=boss?`<path d="M34 12 l5 9 11-11 11 11 5-9 -3 16 H37z" fill="#ffb64d" stroke="#d98f2b" stroke-width="2"/>`:"";
+  return `<svg viewBox="0 0 100 100" width="${s}" height="${s}"><path d="M50 8 C26 8 16 28 16 48 V82 Q16 92 24 86 Q30 80 34 86 Q40 94 46 86 Q50 80 54 86 Q60 94 66 86 Q70 80 76 86 Q84 92 84 82 V48 C84 28 74 8 50 8z" fill="${sp.body}" stroke="#ffffff66" stroke-width="2"/>${crown}${extras}${eyes}${mouth}</svg>`;
+}
+document.getElementById("heroGhost").innerHTML=ghostSVG(SPECIES[7],150);
+document.getElementById("roster").innerHTML=SPECIES.map(sp=>
+  sp.rar==="b"
+  ? `<div class="gcard boss"><div class="art">${ghostSVG(sp,140)}</div><div><h3>${sp.name}</h3><span class="rar b">Boss</span><p>${sp.desc}</p></div></div>`
+  : `<div class="gcard"><div class="art">${ghostSVG(sp,96)}</div><h3>${sp.name}</h3><span class="rar ${sp.rar}">${RAR[sp.rar]}</span><p>${sp.desc}</p></div>`
+).join("");
+</script>
+</body>
+</html>
