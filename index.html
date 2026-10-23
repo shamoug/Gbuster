@@ -74,6 +74,10 @@ section .lede{color:#9aa0d4;font-weight:700;margin-bottom:28px;max-width:560px}
 .col ol li{margin-bottom:6px}
 
 footer{border-top:1.5px solid #2c3166;padding:26px 0 40px;color:#8e93c4;font-weight:700;font-size:13.5px;text-align:center}
+
+#hardRefresh{position:fixed;right:16px;bottom:16px;z-index:50;width:46px;height:46px;border-radius:50%;
+  background:var(--panel);border:1.5px solid #30356b;color:var(--ecto);font-size:21px;font-weight:900;cursor:pointer;
+  box-shadow:0 6px 20px rgba(0,0,0,.45)}
 </style>
 </head>
 <body>
@@ -145,6 +149,7 @@ footer{border-top:1.5px solid #2c3166;padding:26px 0 40px;color:#8e93c4;font-wei
   </div>
 </section>
 
+<button id="hardRefresh" title="Hard refresh — reload the newest version">⟳</button>
 <footer>
   <div class="wrap">
     Ghost Buster GO · an open-source AR game · <a href="https://github.com/shamoug/Gbuster">source on GitHub</a><br>
@@ -178,6 +183,13 @@ document.getElementById("roster").innerHTML=SPECIES.map(sp=>
   ? `<div class="gcard boss"><div class="art">${ghostSVG(sp,140)}</div><div><h3>${sp.name}</h3><span class="rar b">Boss</span><p>${sp.desc}</p></div></div>`
   : `<div class="gcard"><div class="art">${ghostSVG(sp,96)}</div><h3>${sp.name}</h3><span class="rar ${sp.rar}">${RAR[sp.rar]}</span><p>${sp.desc}</p></div>`
 ).join("");
+</script>
+<script>
+document.getElementById("hardRefresh").onclick=async function(){
+  try{ if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch(e){}
+  try{ const regs=await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r=>r.unregister())); }catch(e){}
+  location.replace(location.pathname+"?u="+Date.now());
+};
 </script>
 </body>
 </html>

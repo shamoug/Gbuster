@@ -250,6 +250,7 @@ body.day #gsWrap{background:rgba(30,40,90,.25)}
   <div id="topbar">
     <div class="chip"><span class="glow">⚡</span><span id="xpChip">Lv 1 · 0 XP</span></div>
     <div class="chip" id="crewChip" style="display:none"><span class="boost">👥</span><span id="crewChipTxt"></span></div>
+    <button class="chip" id="refreshBtn" style="margin-left:auto" title="Hard refresh — reload the newest version">⟳</button>
   </div>
   <div id="msg"></div>
   <div id="gsWrap">
@@ -923,6 +924,13 @@ async function checkUpdate(){
 }
 checkUpdate();
 setInterval(checkUpdate, 60000);
+async function hardRefresh(){
+  toast("Hard refreshing — loading the newest version…");
+  try{ if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch(e){}
+  try{ const regs=await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r=>r.unregister())); }catch(e){}
+  setTimeout(()=>location.replace(location.pathname+"?u="+Date.now()), 400);
+}
+$("refreshBtn").onclick=hardRefresh;
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
 </script>
 </body>
