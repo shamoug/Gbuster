@@ -515,16 +515,49 @@ function onPos(p){
     if(follow) map.panTo([me.lat,me.lng],{animate:true});
   }
 }
+/* ---------- hunt chain: a ghost is always inside the circle ----------
+   The first zone centers on you. Catch its ghost and a new zone opens,
+   centered where you caught it, with the next ghost inside. */
+let trail={ghost:null, center:null}, trailRing=null;
+function randPoint(c,r){
+  const a=Math.random()*6.283, d=25+Math.random()*(r-30);
+  return {lat:c.lat+d*Math.cos(a)/110540, lng:c.lng+d*Math.sin(a)/(111320*Math.cos(c.lat*Math.PI/180)||1)};
+}
+function pickNode(center,radius){
+  if(!NET.pts) return null;
+  const cands=NET.pts.filter(p=>dist(center.lat,center.lng,p[0],p[1])<=radius && dist(me.lat,me.lng,p[0],p[1])>20);
+  if(!cands.length) return null;
+  cands.sort((a,b)=>dist(me.lat,me.lng,b[0],b[1])-dist(me.lat,me.lng,a[0],a[1]));
+  const pick=cands[Math.floor(Math.random()*Math.min(6,cands.length))];
+  return {lat:pick[0],lng:pick[1]};
+}
+function ensureTrailGhost(){
+  if(me.lat===null) return;
+  if(trail.ghost && !sessionCaught.has(trail.ghost.key)) return;
+  const center = trail.center || {lat:me.lat,lng:me.lng};
+  const spot = pickNode(center,CATCH_RANGE) || randPoint(center,CATCH_RANGE);
+  const r=Math.random();
+  const pool = r<.07 ? ["fog","shiver","fang","wrap"] : r<.32 ? ["grumble","zappy","bones"] : ["blinky","snacker"];
+  const sp=SPECIES.find(x=>x.id===pool[Math.floor(Math.random()*pool.length)]);
+  trail.ghost={key:"trail|"+Date.now(), sp, lat:spot.lat, lng:spot.lng, trail:true};
+}
 function refreshGhosts(){
   if(me.lat===null||!gLayer) return;
   if(!NET.loading){
     if(!NET.pts && !NET.failed) loadNet(me.lat,me.lng);
     else if(NET.pts && dist(me.lat,me.lng,NET.lat,NET.lng)>500) loadNet(me.lat,me.lng);
   }
+  ensureTrailGhost();
+  if(trail.center){
+    if(!trailRing) trailRing=L.circle(trail.center,{radius:CATCH_RANGE,color:"#d98f2b",weight:2,opacity:.85,dashArray:"6 7",fillColor:"#ffb64d",fillOpacity:.08}).addTo(map);
+    else trailRing.setLatLng(trail.center);
+  }
   gLayer.clearLayers();
   const used=[];
-  for(const g of ghostsNear(me.lat,me.lng)){
-    if(NET.pts){
+  const roster=ghostsNear(me.lat,me.lng);
+  if(trail.ghost) roster.push(trail.ghost);
+  for(const g of roster){
+    if(NET.pts && !g.trail){
       const sn=snapToNet(g.key,g.lat,g.lng);
       if(!sn) continue;
       if(used.some(u=>dist(u[0],u[1],sn.lat,sn.lng)<25)) continue;
@@ -730,6 +763,7 @@ function drawBeam(ctx,x1,y1,x2,y2){
 function capture(){
   const g=H.g, sp=g.sp;
   markCaught(g.key);
+  if(g.trail){ trail.center={lat:g.lat,lng:g.lng}; trail.ghost=null; }
   P.caught[sp.id]=(P.caught[sp.id]||0)+1;
   P.xp+=sp.xp; save();
   if(navigator.vibrate) navigator.vibrate([30,40,80]);
