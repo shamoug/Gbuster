@@ -200,6 +200,35 @@ input[type=text]:focus{border-color:var(--ecto)}
 #intro p{font-weight:700;color:#aab0e8;font-size:15px;line-height:1.55;max-width:330px;margin-bottom:18px}
 #intro input{max-width:300px;text-align:center;margin-bottom:12px}
 #intro .bigbtn{max-width:300px}
+
+/* ---------- day theme (6:00–18:59); night look applies only at night ---------- */
+body.day #map{background:#dfe6f2}
+body.day .chip{background:rgba(255,255,255,.96);border-color:#d8ddf0;color:#1d2340;box-shadow:0 3px 14px rgba(30,40,90,.18)}
+body.day #msg{background:rgba(255,255,255,.97);border-color:#0ea583;color:#1d2340}
+body.day #tabs{background:#ffffff;border-top-color:#e2e6f5}
+body.day .tab{color:#7a82ab}
+body.day .tab.on{color:#0b8a6e;background:rgba(14,165,131,.12)}
+body.day .panel{background:#eef1f8}
+body.day .panel h1{color:#1d2340}
+body.day .panel .sub{color:#5b6390}
+body.day .card{background:#ffffff;border-color:#e2e6f5}
+body.day .dexrow .art{background:#f2f4fb}
+body.day .dexrow h2{color:#1d2340}
+body.day .dexrow .meta{color:#5b6390}
+body.day .dexrow .count b{color:#0b8a6e}
+body.day input[type=text]{background:#f4f6fc;border-color:#d8ddf0;color:#1d2340}
+body.day .bigbtn.ghosted{background:#f4f6fc;color:#5a4fa8;border-color:#d8ddf0}
+body.day .note{color:#5b6390}
+body.day .lb-row{border-bottom-color:#e2e6f5;color:#1d2340}
+body.day .lb-row .rk{color:#5a4fa8}
+body.day .lb-row .xp{color:#0b8a6e}
+body.day #gsheet{background:#ffffff;border-color:#e2e6f5;box-shadow:0 -12px 40px rgba(30,40,90,.25)}
+body.day #gsName{color:#1d2340}
+body.day #gsArt{background:#f2f4fb;border-color:#e2e6f5}
+body.day #gsAddr{color:#0b8a6e}
+body.day #gsDist{color:#5b6390}
+body.day #gsClose{background:#f2f4fb;border-color:#d8ddf0;color:#5b6390}
+body.day #gsWrap{background:rgba(30,40,90,.25)}
 </style>
 </head>
 <body>
@@ -829,6 +858,13 @@ $("startBtn").onclick=()=>{
 if(P.name){ /* returning player skips intro */
   show("mapScreen"); updateHUD(); cloudPull(); initMap();
 }
+
+/* ---------- day/night theme: night look only at night ---------- */
+function applyTheme(){
+  const h=new Date().getHours();
+  document.body.classList.toggle("day", h>=6 && h<19);
+}
+applyTheme(); setInterval(applyTheme, 60000);
 
 /* ---------- service worker (installable app) ---------- */
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("../sw.js").catch(()=>{}); }
