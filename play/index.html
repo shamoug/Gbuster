@@ -901,8 +901,29 @@ function applyTheme(){
 }
 applyTheme(); setInterval(applyTheme, 60000);
 
-/* ---------- service worker (installable app) ---------- */
-if("serviceWorker" in navigator){ navigator.serviceWorker.register("../sw.js").catch(()=>{}); }
+/* ---------- service worker + auto-update: installed app always runs the latest version ---------- */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("../sw.js").then(r=>{ try{r.update();}catch(e){} }).catch(()=>{});
+}
+let pageTag=null;
+async function checkUpdate(){
+  try{
+    const r=await fetch(location.pathname+"?u="+Date.now(),{method:"HEAD",cache:"no-store"});
+    const t=r.headers.get("etag")||r.headers.get("last-modified");
+    if(!t) return;
+    if(pageTag===null){ pageTag=t; return; }
+    if(t!==pageTag){
+      pageTag=t;
+      toast("New version found — updating…");
+      try{ if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch(e){}
+      try{ const reg=await navigator.serviceWorker.getRegistration(); if(reg) await reg.update(); }catch(e){}
+      setTimeout(()=>location.replace(location.pathname+"?u="+Date.now()),700);
+    }
+  }catch(e){}
+}
+checkUpdate();
+setInterval(checkUpdate, 60000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
 </script>
 </body>
 </html>

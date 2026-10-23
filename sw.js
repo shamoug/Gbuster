@@ -1,6 +1,6 @@
 // Minimal service worker: makes the game installable and caches the shell.
-const CACHE = "gbgo-v1";
-const SHELL = ["./", "./index.html", "./play/", "./play/index.html", "./play/config.js", "./manifest.webmanifest"];
+const CACHE = "gbgo-v2";
+const SHELL = ["./", "./index.html", "./play/", "./play/index.html", "./play/config.js", "./art.js", "./manifest.webmanifest"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => {}));
   self.skipWaiting();
