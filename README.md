@@ -9,7 +9,7 @@ An augmented-reality ghost-hunting game for your phone, in the spirit of locatio
 | System | Implementation |
 |---|---|
 | Map | Leaflet + OpenStreetMap tiles, live GPS tracking, 75 m capture ring |
-| Spawning | Deterministic: the world is cut into ~150 m cells that re-roll ghosts every 2 hours, so every player standing in the same place sees the same ghosts |
+| Spawning | Deterministic ~150 m cells re-rolled every 2 hours (everyone co-located sees the same ghosts), snapped to walkable public places via OpenStreetMap Overpass: quiet streets, footpaths, parks. Water, highways, private and restricted land are excluded |
 | AR capture | Rear camera feed via `getUserMedia`, ghost rendered as animated SVG with device-tilt parallax, dodging AI |
 | Combat | Hold-to-fire lightning stream drawn on canvas, aim by dragging, heat gauge with overheat lockout |
 | Crew play | Shared crew name; each crewmate active in the last 10 min stacks +0.5× beam damage (cap ×2). The boss is tuned for crews |

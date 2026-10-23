@@ -355,6 +355,45 @@ function ghostsNear(lat,lng){
 const sessionCaught = new Set(JSON.parse(sessionStorage.getItem("gbgo_caught")||"[]"));
 function markCaught(k){ sessionCaught.add(k); sessionStorage.setItem("gbgo_caught",JSON.stringify([...sessionCaught])); }
 
+/* ---------- public-place network ----------
+   Ghosts are snapped to real walkable places: quiet streets, footpaths,
+   cycleways, and parks, pulled live from OpenStreetMap (Overpass API).
+   Water, highways, private and restricted land are never candidates,
+   so no spawn can land there. If the lookup fails, raw positions are
+   used as a fallback so the game still plays. */
+let NET={pts:null,lat:null,lng:null,loading:false,failed:false};
+async function loadNet(lat,lng){
+  if(NET.loading) return;
+  NET.loading=true;
+  const d=0.007; // ~750 m box
+  const box=`(${lat-d},${lng-d},${lat+d},${lng+d})`;
+  const q=`[out:json][timeout:20];(way["highway"~"^(residential|living_street|pedestrian|footway|path|cycleway|unclassified|tertiary)$"]["access"!~"private|no"]${box};way["leisure"~"^(park|garden|playground|recreation_ground|common|dog_park)$"]["access"!~"private|no"]${box};);out geom 300;`;
+  try{
+    const r=await fetch("https://overpass-api.de/api/interpreter",{
+      method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:"data="+encodeURIComponent(q)});
+    const j=await r.json();
+    const pts=[];
+    for(const w of j.elements||[]) for(const p of (w.geometry||[])) pts.push([p.lat,p.lon]);
+    if(pts.length){ NET.pts=pts; NET.lat=lat; NET.lng=lng; NET.failed=false; snapCache.clear(); }
+    else NET.failed=true;
+  }catch(e){ NET.failed=true; }
+  NET.loading=false;
+  refreshGhosts();
+}
+const snapCache=new Map();
+function snapToNet(key,lat,lng){
+  if(snapCache.has(key)) return snapCache.get(key);
+  let best=null,bd=1e9;
+  for(const p of NET.pts){
+    const dd=dist(lat,lng,p[0],p[1]);
+    if(dd<bd){bd=dd;best=p;}
+  }
+  const res = bd<=300 ? {lat:best[0],lng:best[1]} : null;
+  snapCache.set(key,res);
+  return res;
+}
+
 /* ---------- map ---------- */
 let map, me={lat:null,lng:null}, pMarker, ring, gLayer, follow=true;
 const CATCH_RANGE = 75; // meters
@@ -384,8 +423,20 @@ function onPos(p){
 }
 function refreshGhosts(){
   if(me.lat===null||!gLayer) return;
+  if(!NET.loading){
+    if(!NET.pts && !NET.failed) loadNet(me.lat,me.lng);
+    else if(NET.pts && dist(me.lat,me.lng,NET.lat,NET.lng)>500) loadNet(me.lat,me.lng);
+  }
   gLayer.clearLayers();
+  const used=[];
   for(const g of ghostsNear(me.lat,me.lng)){
+    if(NET.pts){
+      const s=snapToNet(g.key,g.lat,g.lng);
+      if(!s) continue;                                   // nothing public nearby: no spawn
+      if(used.some(u=>dist(u[0],u[1],s.lat,s.lng)<25)) continue; // don't stack ghosts
+      used.push([s.lat,s.lng]);
+      g.lat=s.lat; g.lng=s.lng;
+    }
     const d = dist(me.lat,me.lng,g.lat,g.lng);
     if(d>650) continue;
     const near = d<=CATCH_RANGE;
