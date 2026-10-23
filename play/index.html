@@ -186,6 +186,11 @@ input[type=text]:focus{border-color:var(--ecto)}
 #heatBar{height:8px;border-radius:99px;background:rgba(0,0,0,.5);border:1px solid #ffffff33;overflow:hidden}
 #heatFill{height:100%;width:0;background:linear-gradient(90deg,var(--ecto),var(--amber),var(--danger))}
 #boostTag{position:absolute;bottom:calc(166px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:30;font-weight:900;font-size:12px;color:var(--amber);text-shadow:0 1px 4px #000;display:none}
+.turnhint{position:absolute;top:44%;z-index:28;display:none;align-items:center;gap:6px;
+  background:rgba(24,27,58,.92);border:1.5px solid var(--ecto-dim);border-radius:999px;
+  padding:10px 14px;font-weight:900;font-size:14px;color:var(--ecto)}
+#turnL{left:10px}#turnR{right:10px}
+.turnhint.show{display:flex}
 #huntHint{position:absolute;bottom:calc(150px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;font-weight:800;font-size:13px;color:#ffffffcc;text-shadow:0 2px 6px #000;z-index:29;padding:0 30px}
 
 /* capture celebration */
@@ -309,7 +314,9 @@ body.day #gsWrap{background:rgba(30,40,90,.25)}
     <div id="hpName"></div>
     <div id="hpBar"><div id="hpFill"></div></div>
   </div>
-  <div id="huntHint">Hold BLAST and keep the stream on the ghost</div>
+  <div id="huntHint">Turn until you face the ghost, then hold BLAST</div>
+  <div class="turnhint" id="turnL">⟵ turn</div>
+  <div class="turnhint" id="turnR">turn ⟶</div>
   <div id="boostTag"></div>
   <div id="heatWrap"><div id="heatBar"><div id="heatFill"></div></div></div>
   <button id="blastBtn">BLAST</button>
@@ -381,6 +388,11 @@ function dist(a,b,c,d){ // meters between two lat/lngs
   const R=6371000,toR=Math.PI/180,dLa=(c-a)*toR,dLo=(d-b)*toR;
   const h=Math.sin(dLa/2)**2+Math.cos(a*toR)*Math.cos(c*toR)*Math.sin(dLo/2)**2;
   return 2*R*Math.asin(Math.sqrt(h));
+}
+function bearingTo(a,b,c,d){ // degrees from point1 to point2
+  const toR=Math.PI/180,y=Math.sin((d-b)*toR)*Math.cos(c*toR),
+  x=Math.cos(a*toR)*Math.sin(c*toR)-Math.sin(a*toR)*Math.cos(c*toR)*Math.cos((d-b)*toR);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
 }
 // deterministic PRNG from a string seed
 function rng(seed){
@@ -491,7 +503,9 @@ function updateHeadingUI(){
   if(a){ a.style.transform=`rotate(${-heading}deg)`; }   // arrow keeps pointing north
   if(c){ c.textContent=` ${Math.round(heading)}° ${cardinal(heading)}`; }
 }
+let devBeta=null;
 function onOrient(e){
+  if(typeof e.beta==="number") devBeta=e.beta;
   let h=null;
   if(typeof e.webkitCompassHeading==="number") h=e.webkitCompassHeading;
   else if(e.absolute!==false && typeof e.alpha==="number") h=360-e.alpha;
@@ -643,7 +657,7 @@ let H = null; // active hunt state
 async function startHunt(g){
   H = {
     g, hp:g.sp.hp, maxhp:g.sp.hp, heat:0, overheated:false, firing:false,
-    gx:.5, gy:.38, vx:(Math.random()-.5)*.003, vy:0, t0:performance.now(),
+    dodge:0, dodgeV:0, t0:performance.now(),
     aimX:innerWidth/2, aimY:innerHeight*.4, done:false
   };
   show("hunt");
@@ -709,16 +723,29 @@ $("camWrap").addEventListener("mousemove",aim);
 function huntLoop(now){
   if(!H) return;
   const g=H.g, sp=g.sp, W=innerWidth, Hh=innerHeight;
-  /* --- ghost drift + dodge --- */
+  /* --- world-anchored ghost: fixed at its GPS spot, sized by real distance --- */
   const t=(now-H.t0)/1000;
-  H.gx += H.vx + Math.sin(t*1.3)*0.0006*sp.speed;
-  H.gy = .36 + Math.sin(t*0.9)*.05 + (H.tiltY||0)*.08;
-  if(H.gx<.16||H.gx>.84) H.vx*=-1;
-  if(H.firing && Math.random()<.012*sp.speed) H.vx = (Math.random()<.5?-1:1)*(.002+.003*sp.speed*Math.random());
-  const px = (H.gx + (H.tiltX||0)*.12)*W, py = H.gy*Hh, sz = sp.size;
+  // dodge sways the ghost a few degrees around its true bearing while you fire
+  if(H.firing && Math.random()<.02*sp.speed) H.dodgeV=(Math.random()-.5)*8*sp.speed;
+  H.dodge=Math.max(-8,Math.min(8,H.dodge+(H.dodgeV||0)*0.016)); H.dodgeV*=0.97;
+  const dMe = me.lat===null ? 15 : Math.max(2.5, dist(me.lat,me.lng,g.lat,g.lng));
+  const brg = (me.lat===null ? 0 : bearingTo(me.lat,me.lng,g.lat,g.lng)) + H.dodge + Math.sin(t*0.8)*1.5;
+  const hd  = (heading===null ? brg : heading);          // no compass: ghost faces you
+  const dAng = ((brg-hd+540)%360)-180;                   // horizontal angle off screen center
+  const pitch = (devBeta===null ? 90 : devBeta) - 90;    // 0 = level, negative = pointing at floor
+  const ppx=W/60, ppy=Hh/75;                             // pixels per degree (60°/75° FOV)
+  // true angular size of a ~6 ft spirit at that distance, clamped for playability
+  const angSz=2*Math.atan(0.95/dMe)*57.3;
+  const sz=Math.max(48,Math.min(430, angSz*ppy));
+  const px = W/2 + dAng*ppx;
+  const py = Hh*0.45 + pitch*ppy + Math.sin(t*1.1)*8;    // gentle hover, anchored to the horizon
+  const facing = Math.abs(dAng)<50;
+  $("turnL").classList.toggle("show", !facing && dAng<0);
+  $("turnR").classList.toggle("show", !facing && dAng>0);
   const gh=$("ghostHolder");
   gh.style.width=sz+"px"; gh.style.height=sz+"px";
   gh.style.transform=`translate(${px-sz/2}px, ${py-sz/2}px)`;
+  gh.style.opacity = facing ? 1 : 0;
 
   /* --- heat --- */
   if(H.firing){ H.heat=Math.min(1,H.heat+.0045); if(H.heat>=1){H.overheated=true;H.firing=false;blast.classList.add("hot");blast.textContent="HOT!";} }
