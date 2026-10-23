@@ -128,7 +128,7 @@ footer{border-top:1.5px solid #2c3166;padding:26px 0 40px;color:#8e93c4;font-wei
 <section>
   <div class="wrap">
     <h2>The cast</h2>
-    <p class="lede">Eight original spooks, from pushovers to a boss that wants your whole crew. Myrtle only drifts out at breakfast time, 6 to 11 am.</p>
+    <p class="lede">Twelve original spooks, from pushovers to a boss that wants your whole crew. Myrtle only drifts out at breakfast time; Hexa the witch flies evenings only.</p>
     <div class="roster" id="roster"></div>
   </div>
 </section>
@@ -152,8 +152,9 @@ footer{border-top:1.5px solid #2c3166;padding:26px 0 40px;color:#8e93c4;font-wei
   </div>
 </footer>
 
+<script src="art.js"></script>
 <script>
-/* shared ghost art, kept in sync with the game roster */
+/* roster data; art comes from art.js */
 const SPECIES=[
  {id:"blinky",name:"Blinky Bloo",rar:"c",body:"#8fd8ff",desc:"A nervous little blob. Blinks a lot. Mostly harmless."},
  {id:"snacker",name:"Snacker",rar:"c",body:"#aef29b",desc:"Haunts bakeries and crumbs. Will trade dignity for a croissant."},
@@ -161,95 +162,17 @@ const SPECIES=[
  {id:"zappy",name:"Zappy",rar:"u",body:"#ffe49f",desc:"Static-charged and twitchy. Eats your beam for breakfast if you let go."},
  {id:"fog",name:"Professor Fog",rar:"r",body:"#c9c2e8",desc:"Wears a monocle. Corrects your grammar while dodging."},
  {id:"shiver",name:"Madame Shiver",rar:"r",body:"#b9a7f2",desc:"Elegant, icy, unimpressed by your aim."},
- {id:"myrtle",name:"Myrtle",rar:"s",body:"#f2b9d4",desc:"A sweet grandmother ghost, teacup in hand. Mornings only."},
+ {id:"myrtle",name:"Myrtle",rar:"s",body:"#f2b9d4",desc:"A sweet grandmother ghost, teacup in hand. Mornings only, 6 to 11 am."},
+ {id:"fang",name:"Count Fang",rar:"r",body:"#d6dcec",desc:"Polite, ancient, allergic to sunrise. The cape has opinions of its own."},
+ {id:"bones",name:"Bones",rar:"u",body:"#f2efe4",desc:"Rattles when he laughs. Keeps losing the same elbow."},
+ {id:"wrap",name:"Wrap",rar:"r",body:"#eadfc2",desc:"Four thousand years old and still not fully unpacked."},
+ {id:"hexa",name:"Hexa",rar:"s",body:"#cda4e8",desc:"A night witch on a racing broom. Evenings only, 6 to 11 pm."},
  {id:"gloom",name:"Gloombert the Grand",rar:"b",body:"#7ee8c9",desc:"Huge, round, one snaggletooth, surprisingly polite. Solo hunters bounce off him; crews with stacked lightning streams bring him down. Worth 400 XP."}
 ];
 const RAR={c:"Common",u:"Uncommon",r:"Rare",s:"Special",b:"Boss"};
-let GUID=0;
-function ghostSVG(sp, px){
-  const s = px || sp.size, id = sp.id, u = "gu"+(GUID++);
-  const C = sp.body, boss = id==="gloom";
-  const SH = {blinky:["#dcf3ff","#5fb5e8"],snacker:["#e4fdd9","#74cf63"],
-    grumble:["#dcdff5","#767ec2"],zappy:["#fff7da","#e2b84f"],
-    fog:["#f1ecfc","#9d93cf"],shiver:["#eae2fc","#8a76d8"],
-    myrtle:["#fde8f1","#df8fb5"],gloom:["#e2fff6","#3fc9a2"]};
-  const [lite,deep] = SH[id]||["#eeeeee","#999999"];
-  const bodyA="M50 6 C27 6 15 25 15 46 V77 Q15 90 24 84 Q30 79 35 85 Q41 92 46 85 Q50 80 54 85 Q59 92 65 85 Q70 79 76 84 Q85 90 85 77 V46 C85 25 73 6 50 6 Z";
-  const bodyB="M50 6 C27 6 15 25 15 46 V77 Q15 88 24 86 Q30 82 35 83 Q41 88 46 87 Q50 83 54 87 Q59 88 65 83 Q70 82 76 86 Q85 88 85 77 V46 C85 25 73 6 50 6 Z";
-  /* eyes */
-  const blink=(cx,rx,ry)=>`<ellipse cx="${cx}" cy="44" rx="${rx}" ry="${ry}" fill="#141233">
-      <animate attributeName="ry" values="${ry};${ry};.7;${ry};${ry}" keyTimes="0;.44;.5;.56;1" dur="3.4s" repeatCount="indefinite"/></ellipse>`;
-  let eyes = boss
-    ? blink(36,7.5,8.5)+blink(64,7.5,8.5)
-      +`<circle cx="39" cy="40.5" r="2.6" fill="#fff"/><circle cx="67" cy="40.5" r="2.6" fill="#fff"/>`
-    : blink(38,5.2,6)+blink(62,5.2,6)
-      +`<circle cx="40" cy="41.5" r="1.9" fill="#fff"/><circle cx="64" cy="41.5" r="1.9" fill="#fff"/>`;
-  /* scary accents: angled brows */
-  const brows = {grumble:`<path d="M30 33 L46 38" stroke="${deep}" stroke-width="3.2" stroke-linecap="round"/><path d="M70 33 L54 38" stroke="${deep}" stroke-width="3.2" stroke-linecap="round"/>`,
-    gloom:`<path d="M26 30 L45 36" stroke="#1d6e55" stroke-width="4" stroke-linecap="round"/><path d="M74 30 L55 36" stroke="#1d6e55" stroke-width="4" stroke-linecap="round"/>`,
-    shiver:`<path d="M31 35 Q38 32 45 35" stroke="${deep}" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M55 35 Q62 32 69 35" stroke="${deep}" stroke-width="2" fill="none" stroke-linecap="round"/>`}[id]||"";
-  /* mouths */
-  const mouth = {
-    blinky:`<path d="M42 57 Q50 64 58 57" stroke="#141233" stroke-width="3" fill="none" stroke-linecap="round"/>
-      <path d="M44 58.5 l2.6 4.6 2.6-4.6z" fill="#fff"/><path d="M51 58.5 l2.6 4.6 2.6-4.6z" fill="#fff"/>`,
-    snacker:`<ellipse cx="50" cy="60" rx="6" ry="4" fill="#141233">
-        <animate attributeName="ry" values="2.5;4.5;2.5" dur=".8s" repeatCount="indefinite"/></ellipse>
-      <circle cx="68" cy="56" r="1.8" fill="#7a5b2e"/><circle cx="31" cy="53" r="1.6" fill="#7a5b2e"/><circle cx="60" cy="67" r="1.4" fill="#7a5b2e"/>`,
-    grumble:`<path d="M41 62 Q50 55 59 62" stroke="#141233" stroke-width="3.2" fill="none" stroke-linecap="round"/>`,
-    zappy:`<path d="M41 59 l4.5 3.5 4.5-3.5 4.5 3.5 4.5-3.5" stroke="#141233" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
-    fog:`<path d="M43 59 Q50 64 57 59" stroke="#141233" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
-    shiver:`<path d="M44 59 Q50 63 56 59" stroke="#141233" stroke-width="2.4" fill="none" stroke-linecap="round"/>`,
-    myrtle:`<path d="M42 57 Q50 64 58 57" stroke="#9c3f68" stroke-width="2.8" fill="none" stroke-linecap="round"/>
-      <ellipse cx="33" cy="52" rx="4.5" ry="3" fill="#ffffff66"/><ellipse cx="67" cy="52" rx="4.5" ry="3" fill="#ffffff66"/>`,
-    gloom:`<path d="M32 56 Q50 74 68 56 Q59 63 50 62 Q41 63 32 56 Z" fill="#0a2a20"/>
-      <path d="M38 58.5 l3.5 6 3.5-6z" fill="#fff"/><path d="M47 60.5 l3 5.5 3-5.5z" fill="#fff"/><path d="M56 58.5 l3.5 6 3.5-6z" fill="#fff"/>`
-  }[id]||"";
-  /* species extras */
-  const extras = {
-    fog:`<circle cx="62" cy="44" r="11" fill="none" stroke="#f3efff" stroke-width="2.4"/><line x1="70" y1="52" x2="77" y2="63" stroke="#f3efff" stroke-width="2"/>`,
-    zappy:`<path d="M50 2 l-6 12 h8 l-7 14" stroke="#ffb64d" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
-        <animate attributeName="opacity" values="1;.25;1;.7;1" dur=".9s" repeatCount="indefinite"/></path>`,
-    shiver:`<path d="M28 30 Q50 15 72 30 L68 23 Q50 11 32 23 Z" fill="#8f7ddb"/>`,
-    myrtle:`<path d="M26 32 Q50 13 74 32 L74 26 Q50 7 26 26 Z" fill="#d998b8"/>
-      <circle cx="38" cy="44" r="8.5" fill="none" stroke="#9c3f68" stroke-width="1.8"/><circle cx="62" cy="44" r="8.5" fill="none" stroke="#9c3f68" stroke-width="1.8"/><line x1="46.5" y1="44" x2="53.5" y2="44" stroke="#9c3f68" stroke-width="1.8"/>
-      <circle cx="80" cy="60" r="7.5" fill="#fff" stroke="#d998b8" stroke-width="2"/><path d="M87 58 q5 2 0 6" fill="none" stroke="#d998b8" stroke-width="2"/>
-      <path d="M79 50 q3 -5 0 -9" stroke="#ffffffaa" stroke-width="1.8" fill="none" stroke-linecap="round">
-        <animate attributeName="opacity" values=".8;.15;.8" dur="2s" repeatCount="indefinite"/></path>`,
-    gloom:`<path d="M33 12 l5.5 9 11.5-11 11.5 11 5.5-9 -3.5 16 H36.5 Z" fill="#ffb64d" stroke="#d98f2b" stroke-width="2"/>`
-  }[id]||"";
-  /* ectoplasm drips for the gooier ghosts */
-  const drip = (id==="snacker"||boss)
-    ? `<ellipse cx="33" cy="86" rx="2.4" ry="3.4" fill="${C}" opacity="0">
-        <animate attributeName="cy" values="84;97" dur="1.7s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values=".85;0" dur="1.7s" repeatCount="indefinite"/></ellipse>
-       <ellipse cx="66" cy="86" rx="2" ry="3" fill="${C}" opacity="0">
-        <animate attributeName="cy" values="84;96" dur="2.1s" begin=".6s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values=".8;0" dur="2.1s" begin=".6s" repeatCount="indefinite"/></ellipse>` : "";
-  return `<svg viewBox="-8 -4 116 112" width="${s}" height="${s}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <radialGradient id="${u}g" cx="50%" cy="32%" r="78%">
-      <stop offset="0%" stop-color="${lite}"/><stop offset="58%" stop-color="${C}"/><stop offset="100%" stop-color="${deep}"/>
-    </radialGradient>
-    <filter id="${u}b" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="5"/></filter>
-  </defs>
-  <ellipse cx="50" cy="52" rx="43" ry="47" fill="${C}" filter="url(#${u}b)" opacity=".22">
-    <animate attributeName="opacity" values=".16;.32;.16" dur="3s" repeatCount="indefinite"/>
-  </ellipse>
-  <ellipse cx="13" cy="55" rx="7" ry="11" fill="url(#${u}g)" opacity=".95">
-    <animateTransform attributeName="transform" type="rotate" values="-12 15 48;12 15 48;-12 15 48" dur="2.4s" repeatCount="indefinite"/>
-  </ellipse>
-  <ellipse cx="87" cy="55" rx="7" ry="11" fill="url(#${u}g)" opacity=".95">
-    <animateTransform attributeName="transform" type="rotate" values="12 85 48;-12 85 48;12 85 48" dur="2.4s" repeatCount="indefinite"/>
-  </ellipse>
-  <path d="${bodyA}" fill="url(#${u}g)" fill-opacity=".94" stroke="#ffffff99" stroke-width="2">
-    <animate attributeName="d" values="${bodyA};${bodyB};${bodyA}" dur="2.2s" repeatCount="indefinite"/>
-  </path>
-  <ellipse cx="50" cy="42" rx="17" ry="18" fill="#ffffff" opacity=".28" filter="url(#${u}b)"/>
-  ${extras}${brows}${eyes}${mouth}${drip}
-</svg>`;
-}
+/* ghost art lives in art.js (window.ghostSVG) */
 
-document.getElementById("heroGhost").innerHTML=ghostSVG(SPECIES[7],150);
+document.getElementById("heroGhost").innerHTML=ghostSVG(SPECIES.find(s=>s.id=="gloom"),150);
 document.getElementById("roster").innerHTML=SPECIES.map(sp=>
   sp.rar==="b"
   ? `<div class="gcard boss"><div class="art">${ghostSVG(sp,140)}</div><div><h3>${sp.name}</h3><span class="rar b">Boss</span><p>${sp.desc}</p></div></div>`
