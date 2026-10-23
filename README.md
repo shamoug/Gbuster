@@ -8,7 +8,7 @@ An augmented-reality ghost-hunting game for your phone, in the spirit of locatio
 
 | System | Implementation |
 |---|---|
-| Map | Leaflet + OpenStreetMap tiles, live GPS tracking, 75 m capture ring |
+| Map | MapLibre GL + OpenFreeMap dark vector tiles (free, no API key), live GPS tracking, 250 ft capture ring |
 | Spawning | Deterministic ~150 m cells re-rolled every 2 hours (everyone co-located sees the same ghosts), snapped to walkable public places via OpenStreetMap Overpass: quiet streets, footpaths, parks. Water, highways, private and restricted land are excluded |
 | AR capture | Rear camera feed via `getUserMedia`, ghost rendered as animated SVG with device-tilt parallax, dodging AI |
 | Combat | Hold-to-fire lightning stream drawn on canvas, aim by dragging, heat gauge with overheat lockout |
