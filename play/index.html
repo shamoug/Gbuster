@@ -94,6 +94,13 @@ button{font-family:inherit;border:0;cursor:pointer;color:inherit;background:none
 .pmark .dot{position:absolute;left:13px;top:13px;width:18px;height:18px;border-radius:50%;background:var(--ecto);border:3px solid #fff;box-shadow:0 0 0 0 rgba(92,242,200,.55);animation:pulse 2s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(92,242,200,.55)}70%{box-shadow:0 0 0 22px rgba(92,242,200,0)}100%{box-shadow:0 0 0 0 rgba(92,242,200,0)}}
 
+#locBtn{
+  position:absolute;right:14px;bottom:110px;z-index:900;width:48px;height:48px;border-radius:50%;
+  background:rgba(24,27,58,.94);border:1.5px solid #343a77;color:var(--ecto);font-size:22px;
+  box-shadow:0 4px 16px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
+#locBtn:active{transform:scale(.93)}
+body.day #locBtn{background:#ffffff;border-color:#d8ddf0;color:#0b8a6e;box-shadow:0 4px 16px rgba(30,40,90,.22)}
+
 /* ---------- tabs ---------- */
 #tabs{
   display:flex;background:var(--night2);border-top:1.5px solid #2c3166;
@@ -249,6 +256,7 @@ body.day #gsWrap{background:rgba(30,40,90,.25)}
     <div class="chip" id="crewChip" style="display:none"><span class="boost">👥</span><span id="crewChipTxt"></span></div>
     <button class="chip" id="refreshBtn" style="margin-left:auto" title="Hard refresh — reload the newest version">⟳</button>
   </div>
+  <button id="locBtn" title="Center the map on my location">⌖</button>
   <div id="msg"></div>
   <div id="gsWrap">
     <div id="gsheet">
@@ -964,6 +972,11 @@ async function hardRefresh(){
   setTimeout(()=>location.replace(location.pathname+"?u="+Date.now()), 400);
 }
 $("refreshBtn").onclick=hardRefresh;
+$("locBtn").onclick=()=>{
+  if(me.lat===null){ toast("Still finding your location…"); return; }
+  follow=true;
+  map.setView([me.lat,me.lng],18,{animate:true});
+};
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
 </script>
 </body>
