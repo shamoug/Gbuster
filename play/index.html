@@ -90,7 +90,8 @@ button{font-family:inherit;border:0;cursor:pointer;color:inherit;background:none
 .gmark.boss svg{animation:bob 3.2s ease-in-out infinite;filter:drop-shadow(0 0 12px rgba(255,182,77,.9))}
 .gmark.far{opacity:.62}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-.pmark .dot{width:18px;height:18px;border-radius:50%;background:var(--ecto);border:3px solid #fff;box-shadow:0 0 0 0 rgba(92,242,200,.55);animation:pulse 2s infinite}
+.pmark .cone{position:absolute;inset:0;transform-origin:50% 50%;transition:transform .25s ease-out}
+.pmark .dot{position:absolute;left:13px;top:13px;width:18px;height:18px;border-radius:50%;background:var(--ecto);border:3px solid #fff;box-shadow:0 0 0 0 rgba(92,242,200,.55);animation:pulse 2s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(92,242,200,.55)}70%{box-shadow:0 0 0 22px rgba(92,242,200,0)}100%{box-shadow:0 0 0 0 rgba(92,242,200,0)}}
 
 $("gsClose").onclick=closeSheet;
@@ -295,6 +296,7 @@ body.day #gsWrap{background:rgba(30,40,90,.25)}
   </div>
   <div id="huntTop">
     <div class="chip"><span class="glow">⚡</span><span id="huntXp"></span></div>
+    <div class="chip" id="arComp" title="Direction you are facing"><span id="arArrow" style="display:inline-block;transition:transform .2s">⬆</span><span id="arCard">—</span></div>
     <button id="fleeBtn">Retreat</button>
   </div>
   <div id="hpWrap">
@@ -471,11 +473,42 @@ function initMap(){
     toast("Location blocked. Allow location access, then reload.", 5000);
   },{enableHighAccuracy:true, maximumAge:2000, timeout:15000});
 }
+/* ---------- heading: phone compass with GPS-course fallback ---------- */
+let heading=null, pCone=null;
+function cardinal(h){ return ["N","NE","E","SE","S","SW","W","NW"][Math.round(h/45)%8]; }
+function updateHeadingUI(){
+  if(heading===null) return;
+  if(pCone) pCone.style.transform=`rotate(${heading}deg)`;
+  const a=$("arArrow"), c=$("arCard");
+  if(a){ a.style.transform=`rotate(${-heading}deg)`; }   // arrow keeps pointing north
+  if(c){ c.textContent=` ${Math.round(heading)}° ${cardinal(heading)}`; }
+}
+function onOrient(e){
+  let h=null;
+  if(typeof e.webkitCompassHeading==="number") h=e.webkitCompassHeading;
+  else if(e.absolute!==false && typeof e.alpha==="number") h=360-e.alpha;
+  if(h!==null){ heading=(h%360+360)%360; updateHeadingUI(); }
+}
+addEventListener("deviceorientationabsolute",onOrient,true);
+addEventListener("deviceorientation",onOrient,true);
+function askOrientPerm(){
+  try{
+    if(window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission)
+      DeviceOrientationEvent.requestPermission().catch(()=>{});
+  }catch(e){}
+}
 function onPos(p){
   me.lat=p.coords.latitude; me.lng=p.coords.longitude;
+  if(typeof p.coords.heading==="number" && !isNaN(p.coords.heading) && p.coords.speed>0.5){
+    heading=p.coords.heading; updateHeadingUI();   // walking direction from GPS
+  }
   if(!map) return;
   if(!pMarker){
-    pMarker=L.marker([me.lat,me.lng],{icon:L.divIcon({className:"pmark",html:'<div class="dot"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:1000}).addTo(map);
+    pMarker=L.marker([me.lat,me.lng],{icon:L.divIcon({className:"pmark",
+      html:'<svg class="cone" viewBox="0 0 44 44" width="44" height="44"><path d="M22 22 L13 4 Q22 -2 31 4 Z" fill="rgba(11,160,124,.55)"/></svg><div class="dot"></div>',
+      iconSize:[44,44],iconAnchor:[22,22]}),zIndexOffset:1000}).addTo(map);
+    pCone=pMarker.getElement().querySelector(".cone");
+    updateHeadingUI();
     ring=L.circle([me.lat,me.lng],{radius:CATCH_RANGE,color:"#1e8e71",weight:2,opacity:.8,fillColor:"#5cf2c8",fillOpacity:.1}).addTo(map);
     map.setView([me.lat,me.lng],18);
     refreshGhosts();
@@ -569,6 +602,7 @@ async function startHunt(g){
     aimX:innerWidth/2, aimY:innerHeight*.4, done:false
   };
   show("hunt");
+  askOrientPerm(); updateHeadingUI();
   $("hpName").innerHTML = `${g.sp.name} <span style="opacity:.75;font-size:12px">· ${RAR_LABEL[g.sp.rar]}</span>`;
   $("huntXp").textContent = `Lv ${level()}`;
   $("ghostHolder").innerHTML = '<div class="pop">'+ghostSVG(g.sp)+'</div>';
@@ -849,6 +883,7 @@ show=function(id){
 $("introArt").innerHTML=ghostSVG(SPECIES[7],140);
 $("nameInput").value=P.name||"";
 $("startBtn").onclick=()=>{
+  askOrientPerm();
   P.name=$("nameInput").value.trim()||"Hunter";
   save();
   show("mapScreen"); updateHUD(); cloudPull(); initMap();
