@@ -31,15 +31,19 @@ function eye(cx,cy,s,iris,line,lid){
   return `<g transform="translate(${cx} ${cy})"><g>
     <animateTransform attributeName="transform" type="scale" values="1 1;1 1;1 .08;1 1;1 1" keyTimes="0;.455;.5;.545;1" dur="3.8s" repeatCount="indefinite"/>
     <ellipse rx="${rx}" ry="${ry}" fill="#fff" stroke="${line}" stroke-width="1.6"/>
-    <circle cx="${0.6*s}" cy="${1*s}" r="${3.6*s}" fill="${iris}"/>
-    <circle cx="${0.6*s}" cy="${1*s}" r="${1.7*s}" fill="#1a1430"/>
-    <circle cx="${-0.9*s}" cy="${-1.2*s}" r="${1.3*s}" fill="#fff"/>
-    <circle cx="${2.1*s}" cy="${2.2*s}" r="${0.7*s}" fill="#ffffffcc"/>
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 0;${1.9*s} ${0.4*s};${1.9*s} ${0.4*s};0 0;${-1.5*s} ${0.6*s};${-1.5*s} ${0.6*s};0 0" keyTimes="0;.28;.34;.5;.58;.74;.88;1" dur="7.5s" repeatCount="indefinite"/>
+      <circle cx="${0.6*s}" cy="${1*s}" r="${3.6*s}" fill="${iris}"/>
+      <circle cx="${0.6*s}" cy="${1*s}" r="${1.7*s}" fill="#1a1430"/>
+      <circle cx="${-0.9*s}" cy="${-1.2*s}" r="${1.3*s}" fill="#fff"/>
+      <circle cx="${2.1*s}" cy="${2.2*s}" r="${0.7*s}" fill="#ffffffcc"/>
+    </g>
   </g></g>`;
 }
 function blush(cx,cy,c){return `<ellipse cx="${cx}" cy="${cy}" rx="4.6" ry="2.8" fill="${c}" opacity=".55"/>`;}
 function arm(d,P,extra){return `<path d="${d}" fill="${P.base}" stroke="${P.line}" stroke-width="2.8" stroke-linejoin="round"${extra||""}/>`;}
-function sway(id,deg,dur){return `<animateTransform attributeName="transform" type="rotate" values="${-deg} 60 24;${deg} 60 24;${-deg} 60 24" dur="${dur}s" repeatCount="indefinite"/>`;}
+const EASE='calcMode="spline" keyTimes="0;.5;1" keySplines=".42 0 .58 1;.42 0 .58 1"';
+function sway(id,deg,dur){return `<animateTransform attributeName="transform" type="rotate" values="${-deg} 60 24;${deg} 60 24;${-deg} 60 24" dur="${dur}s" ${EASE} repeatCount="indefinite"/>`;}
 
 const FACES={
 blinky(P){return `
@@ -240,24 +244,36 @@ window.ghostSVG=function(sp,px){
   const back=(BACKS[id]||(()=>""))(P);
   return `<svg viewBox="-6 -14 132 144" width="${s}" height="${s}" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <clipPath id="${u}c"><path d="${BODY_A}"><animate attributeName="d" values="${BODY_A};${BODY_B};${BODY_A}" dur="2.4s" repeatCount="indefinite"/></path></clipPath>
+    <clipPath id="${u}c"><path d="${BODY_A}"><animate attributeName="d" values="${BODY_A};${BODY_B};${BODY_A}" dur="2.4s" ${EASE} repeatCount="indefinite"/></path></clipPath>
     <filter id="${u}f" x="-45%" y="-45%" width="190%" height="190%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="${u}f2" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.4"/></filter>
+    <radialGradient id="${u}bg" cx="38%" cy="24%" r="95%">
+      <stop offset="0%" stop-color="${P.light}"/>
+      <stop offset="46%" stop-color="${P.base}"/>
+      <stop offset="100%" stop-color="${P.shade}"/>
+    </radialGradient>
   </defs>
   <g>
     ${sway(u, boss?1.6:2.4, boss?4.2:3.4)}
+    <g transform="translate(60 64)"><g>
+      <animateTransform attributeName="transform" type="scale" values="1 1;1.028 .972;1 1;.978 1.022;1 1" keyTimes="0;.25;.5;.75;1" calcMode="spline" keySplines=".42 0 .58 1;.42 0 .58 1;.42 0 .58 1;.42 0 .58 1" dur="${boss?4.6:3.2}s" repeatCount="indefinite"/>
+    <g transform="translate(-60 -64)">
     ${back}
     <path d="${BODY_A}" fill="${P.base}" opacity=".55" filter="url(#${u}f)" transform="translate(-3.6 -3) scale(1.06)">
-      <animate attributeName="opacity" values=".4;.65;.4" dur="2.8s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".4;.68;.4" dur="2.8s" ${EASE} repeatCount="indefinite"/>
     </path>
-    <path d="${BODY_A}" fill="${P.base}" stroke="${P.line}" stroke-width="3" stroke-linejoin="round">
-      <animate attributeName="d" values="${BODY_A};${BODY_B};${BODY_A}" dur="2.4s" repeatCount="indefinite"/>
+    <path d="${BODY_A}" fill="url(#${u}bg)" stroke="${P.line}" stroke-width="3" stroke-linejoin="round">
+      <animate attributeName="d" values="${BODY_A};${BODY_B};${BODY_A}" dur="2.4s" ${EASE} repeatCount="indefinite"/>
     </path>
     <g clip-path="url(#${u}c)">
-      <path d="${SHADE}" fill="${P.shade}" opacity=".85"/>
-      <ellipse cx="44" cy="30" rx="15" ry="9" fill="#ffffff" opacity=".55" transform="rotate(-22 44 30)"/>
-      <path d="M25 96 Q60 104 95 96 L95 120 L25 120 Z" fill="${P.shade}" opacity=".35"/>
+      <path d="${SHADE}" fill="${P.shade}" opacity=".6"/>
+      <path d="M60 10 C38 10 25 29 25 52 C25 68 27 82 24 96" stroke="${P.light}" stroke-width="4.5" fill="none" opacity=".8" filter="url(#${u}f2)"/>
+      <ellipse cx="44" cy="30" rx="16" ry="10" fill="#ffffff" opacity=".6" transform="rotate(-22 44 30)" filter="url(#${u}f2)"/>
+      <ellipse cx="60" cy="58" rx="34" ry="30" fill="#ffffff" opacity=".12" filter="url(#${u}f)"/>
+      <path d="M25 96 Q60 104 95 96 L95 120 L25 120 Z" fill="${P.shade}" opacity=".3"/>
     </g>
     ${face}
+    </g></g></g>
   </g>
 </svg>`;
 };

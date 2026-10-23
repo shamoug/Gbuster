@@ -130,6 +130,13 @@ input[type=text]:focus{border-color:var(--ecto)}
 #ghostHolder.hit svg{animation:shake .14s infinite}
 @keyframes shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-3px,2px)}50%{transform:translate(3px,-2px)}75%{transform:translate(-2px,-2px)}}
 #ghostHolder svg{width:100%;height:100%;filter:drop-shadow(0 0 16px rgba(185,167,242,.75))}
+#ghostHolder .pop{width:100%;height:100%;animation:popin .55s cubic-bezier(.18,1.6,.45,1)}
+@keyframes popin{0%{transform:scale(.08) rotate(-10deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.mote{position:absolute;border-radius:50%;background:#5cf2c8;pointer-events:none;z-index:5;opacity:.35;
+  animation:moteFloat 7s ease-in-out infinite}
+@keyframes moteFloat{0%,100%{transform:translate(0,0);opacity:.15}30%{opacity:.5}50%{transform:translate(14px,-46px)}70%{opacity:.3}}
+.confetti{position:absolute;top:-12px;width:9px;height:14px;border-radius:2px;animation:confFall 2.6s ease-in forwards}
+@keyframes confFall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(105vh) rotate(640deg);opacity:.2}}
 #beamCanvas{z-index:7}
 #beamCanvas{position:absolute;inset:0;pointer-events:none}
 #huntTop{position:absolute;top:calc(10px + env(safe-area-inset-top));left:12px;right:12px;display:flex;align-items:center;gap:10px;z-index:30}
@@ -465,7 +472,15 @@ async function startHunt(g){
   show("hunt");
   $("hpName").innerHTML = `${g.sp.name} <span style="opacity:.75;font-size:12px">· ${RAR_LABEL[g.sp.rar]}</span>`;
   $("huntXp").textContent = `Lv ${level()}`;
-  $("ghostHolder").innerHTML = ghostSVG(g.sp);
+  $("ghostHolder").innerHTML = '<div class="pop">'+ghostSVG(g.sp)+'</div>';
+  // ambient spectral motes
+  document.querySelectorAll(".mote").forEach(m=>m.remove());
+  for(let i=0;i<7;i++){
+    const m=document.createElement("div"); m.className="mote";
+    const sz=2+Math.random()*4;
+    m.style.cssText=`width:${sz}px;height:${sz}px;left:${5+Math.random()*90}%;top:${18+Math.random()*64}%;animation-delay:-${Math.random()*7}s;animation-duration:${5.5+Math.random()*4}s`;
+    $("camWrap").appendChild(m);
+  }
   $("huntHint").style.display="block";
   const b = crewBoost();
   $("boostTag").style.display = b>1 ? "block" : "none";
@@ -594,6 +609,13 @@ function capture(){
   $("caughtTitle").textContent = sp.rar==="b" ? "BOSS DOWN!" : "Trapped!";
   $("caughtSub").textContent = `${sp.name} captured · +${sp.xp} XP`;
   $("caught").classList.add("on");
+  document.querySelectorAll("#caught .confetti").forEach(c=>c.remove());
+  const cols=["#5cf2c8","#ffb64d","#b9a7f2","#ff8ba0","#8fd8ff"];
+  for(let i=0;i<24;i++){
+    const c=document.createElement("div"); c.className="confetti";
+    c.style.cssText=`left:${Math.random()*100}%;background:${cols[i%cols.length]};animation-delay:${Math.random()*.5}s;animation-duration:${2+Math.random()*1.4}s`;
+    $("caught").appendChild(c);
+  }
   cloudPush();
 }
 $("caughtBtn").onclick=()=>{ $("caught").classList.remove("on"); show("mapScreen"); refreshGhosts(); updateHUD(); renderDex(); };
