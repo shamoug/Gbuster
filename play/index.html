@@ -8,7 +8,7 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../icons/icon-192.png">
 <link rel="apple-touch-icon" href="../icons/icon-192.png">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="../vendor/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -323,7 +323,7 @@ body.day #gsWrap{background:rgba(30,40,90,.25)}
   <button class="bigbtn" id="caughtBtn" style="margin-top:22px">Back to the map</button>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../vendor/leaflet.js"></script>
 <script src="../art.js"></script>
 <script src="config.js"></script>
 <script>
@@ -407,7 +407,9 @@ function cellGhosts(cx,cy){
     else if(roll<.11) pool=["fog","shiver","fang","wrap"];
     else if(roll<.40) pool=["grumble","zappy","bones"];
     else pool=["blinky","snacker"];
-    const sp = SPECIES.find(s=>s.id===pool[Math.floor(r()*pool.length)]);
+    const pickId = pool[Math.floor(r()*pool.length)];
+    const sp = SPECIES.find(s=>s.id===pickId);
+    if(!sp) continue;
     out.push({
       key:`${cx}|${cy}|${EPOCH()}|${i}`,
       sp, lat:(cx+0.08+r()*0.84)*CELL, lng:(cy+0.08+r()*0.84)*CELL
@@ -541,12 +543,15 @@ function pickNode(center,radius){
 }
 function ensureTrailGhost(){
   if(me.lat===null) return;
+  if(!trail.center) return;            // no chain yet: walk until your circle finds a ghost
   if(trail.ghost && !sessionCaught.has(trail.ghost.key)) return;
-  const center = trail.center || {lat:me.lat,lng:me.lng};
+  const center = trail.center;
   const spot = pickNode(center,CATCH_RANGE) || randPoint(center,CATCH_RANGE);
   const r=Math.random();
   const pool = r<.07 ? ["fog","shiver","fang","wrap"] : r<.32 ? ["grumble","zappy","bones"] : ["blinky","snacker"];
-  const sp=SPECIES.find(x=>x.id===pool[Math.floor(Math.random()*pool.length)]);
+  const pickId=pool[Math.floor(Math.random()*pool.length)];
+  const sp=SPECIES.find(x=>x.id===pickId);
+  if(!sp) return;
   trail.ghost={key:"trail|"+Date.now(), sp, lat:spot.lat, lng:spot.lng, trail:true};
 }
 function refreshGhosts(){
@@ -573,7 +578,8 @@ function refreshGhosts(){
       g.lat=sn.lat; g.lng=sn.lng;
     }
     const d = dist(me.lat,me.lng,g.lat,g.lng);
-    if(d>650) continue;
+    if(!g.trail && d>CATCH_RANGE) continue;   // ghosts exist only inside your green circle
+    if(g.trail && d>900) continue;
     const near = d<=CATCH_RANGE;
     const px = g.sp.rar==="b"?66:46;
     const mk = L.marker([g.lat,g.lng],{icon:L.divIcon({
@@ -771,7 +777,7 @@ function drawBeam(ctx,x1,y1,x2,y2){
 function capture(){
   const g=H.g, sp=g.sp;
   markCaught(g.key);
-  if(g.trail){ trail.center={lat:g.lat,lng:g.lng}; trail.ghost=null; }
+  trail.center={lat:g.lat,lng:g.lng}; trail.ghost=null;   // every capture opens the next zone here
   P.caught[sp.id]=(P.caught[sp.id]||0)+1;
   P.xp+=sp.xp; save();
   if(navigator.vibrate) navigator.vibrate([30,40,80]);
