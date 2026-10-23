@@ -8,7 +8,7 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../icons/icon-192.png">
 <link rel="apple-touch-icon" href="../icons/icon-192.png">
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -34,11 +34,27 @@ button{font-family:inherit;border:0;cursor:pointer;color:inherit;background:none
 
 /* ---------- map ---------- */
 #map{flex:1;background:#0a0c1e}
-.maplibregl-canvas{filter:brightness(1.4) contrast(1.06) saturate(1.15)}
-.maplibregl-ctrl-attrib{background:rgba(14,16,38,.72)!important;font-size:9px}
-.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib a{color:#8e93c4!important}
+.leaflet-tile{filter:saturate(1.08) contrast(1.03)}
+.leaflet-control-attribution{font-size:9px;background:rgba(255,255,255,.75)!important}
 .gmark{position:relative;cursor:pointer}
 .pmark{position:relative}
+
+/* ghost info sheet */
+#gsWrap{position:absolute;inset:0;z-index:1500;display:none;background:rgba(10,12,30,.35)}
+#gsWrap.on{display:block}
+#gsheet{position:absolute;left:0;right:0;bottom:0;background:var(--night2);border-radius:26px 26px 0 0;
+  border:1.5px solid #30356b;border-bottom:0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+  box-shadow:0 -12px 40px rgba(0,0,0,.5);animation:sheetUp .28s cubic-bezier(.2,1.2,.4,1)}
+@keyframes sheetUp{from{transform:translateY(60%);opacity:0}to{transform:translateY(0);opacity:1}}
+#gsTop{display:flex;gap:14px;align-items:center}
+#gsArt{width:92px;height:92px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:var(--night);border-radius:20px;border:1.5px solid #30356b}
+#gsName{font-size:19px;margin-bottom:5px}
+#gsAddr{font-weight:800;font-size:13.5px;color:var(--ecto);margin-top:7px;line-height:1.4}
+#gsAddr .pin{opacity:.9;margin-right:3px}
+#gsDist{font-weight:800;font-size:12.5px;color:#9aa0d4;margin-top:3px}
+#gsClose{position:absolute;top:12px;right:14px;width:32px;height:32px;border-radius:50%;
+  background:var(--night);color:#9aa0d4;font-weight:900;font-size:15px;border:1.5px solid #30356b}
 
 #topbar{
   position:absolute;top:calc(8px + env(safe-area-inset-top));left:10px;right:10px;z-index:900;
@@ -76,6 +92,9 @@ button{font-family:inherit;border:0;cursor:pointer;color:inherit;background:none
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 .pmark .dot{width:18px;height:18px;border-radius:50%;background:var(--ecto);border:3px solid #fff;box-shadow:0 0 0 0 rgba(92,242,200,.55);animation:pulse 2s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(92,242,200,.55)}70%{box-shadow:0 0 0 22px rgba(92,242,200,0)}100%{box-shadow:0 0 0 0 rgba(92,242,200,0)}}
+
+$("gsClose").onclick=closeSheet;
+$("gsWrap").addEventListener("click",e=>{ if(e.target.id==="gsWrap") closeSheet(); });
 
 /* ---------- tabs ---------- */
 #tabs{
@@ -203,6 +222,21 @@ input[type=text]:focus{border-color:var(--ecto)}
     <div class="chip" id="crewChip" style="display:none"><span class="boost">👥</span><span id="crewChipTxt"></span></div>
   </div>
   <div id="msg"></div>
+  <div id="gsWrap">
+    <div id="gsheet">
+      <button id="gsClose">✕</button>
+      <div id="gsTop">
+        <div id="gsArt"></div>
+        <div style="flex:1">
+          <h2 id="gsName"></h2>
+          <div id="gsTags"></div>
+          <div id="gsAddr"></div>
+          <div id="gsDist"></div>
+        </div>
+      </div>
+      <button class="bigbtn" id="gsBtn">Hunt</button>
+    </div>
+  </div>
   <div id="tabs">
     <button class="tab on" data-s="mapScreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Map</button>
     <button class="tab" data-s="dexScreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 1-3-3V3z"/><path d="M5 17h14"/></svg>Ghostdex</button>
@@ -252,7 +286,7 @@ input[type=text]:focus{border-color:var(--ecto)}
   <button class="bigbtn" id="caughtBtn" style="margin-top:22px">Back to the map</button>
 </div>
 
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="../art.js"></script>
 <script src="config.js"></script>
 <script>
@@ -392,60 +426,42 @@ function snapToNet(key,lat,lng){
   return res;
 }
 
-/* ---------- map (MapLibre GL + OpenFreeMap dark vector tiles) ---------- */
-let map, me={lat:null,lng:null}, pMarker, gMarkers=[], follow=true, mapReady=false;
+/* ---------- map (Leaflet + OpenStreetMap, the free standard map) ---------- */
+let map, me={lat:null,lng:null}, pMarker, ring, gLayer, follow=true;
 const CATCH_RANGE = 75; // meters (~250 ft)
 function fmtDist(m){ const ft=m*3.28084; return ft<1000 ? Math.round(ft)+" ft" : (ft/5280).toFixed(1)+" mi"; }
-function circleGeo(lat,lng,r){
-  const pts=[];
-  for(let i=0;i<=64;i++){
-    const a=i/64*2*Math.PI;
-    pts.push([lng + r*Math.sin(a)/(111320*Math.cos(lat*Math.PI/180)||1), lat + r*Math.cos(a)/110540]);
-  }
-  return {type:"Feature",geometry:{type:"Polygon",coordinates:[pts]}};
-}
 function initMap(){
-  if(typeof maplibregl==="undefined"){ toast("Map library could not load. Check your connection and reload.",6000); return; }
-  map=new maplibregl.Map({
-    container:"map",
-    style:"https://tiles.openfreemap.org/styles/dark",
-    center:[-73.7824,40.9115], zoom:15.6, pitch:48, bearing:-12,
-    attributionControl:{compact:true}
-  });
-  map.on("load",()=>{
-    map.addSource("ring",{type:"geojson",data:circleGeo(0,0,0)});
-    map.addLayer({id:"ringF",type:"fill",source:"ring",paint:{"fill-color":"#5cf2c8","fill-opacity":.08}});
-    map.addLayer({id:"ringL",type:"line",source:"ring",paint:{"line-color":"#5cf2c8","line-opacity":.7,"line-width":1.6}});
-    mapReady=true;
-    if(me.lat!==null) map.getSource("ring").setData(circleGeo(me.lat,me.lng,CATCH_RANGE));
-  });
+  if(typeof L==="undefined"){ toast("Map library could not load. Check your connection and reload.",6000); return; }
+  map = L.map("map",{zoomControl:false,attributionControl:true}).setView([40.9115,-73.7824],17);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+  gLayer = L.layerGroup().addTo(map);
   map.on("dragstart",()=>follow=false);
   if(!navigator.geolocation){ toast("This phone has no location service."); return; }
   navigator.geolocation.watchPosition(onPos, err=>{
     toast("Location blocked. Allow location access, then reload.", 5000);
-  },{enableHighAccuracy:true, maximumAge:3000, timeout:15000});
+  },{enableHighAccuracy:true, maximumAge:2000, timeout:15000});
 }
 function onPos(p){
   me.lat=p.coords.latitude; me.lng=p.coords.longitude;
   if(!map) return;
   if(!pMarker){
-    const el=document.createElement("div"); el.className="pmark"; el.innerHTML='<div class="dot"></div>';
-    pMarker=new maplibregl.Marker({element:el}).setLngLat([me.lng,me.lat]).addTo(map);
-    map.jumpTo({center:[me.lng,me.lat],zoom:16.2,pitch:48,bearing:-12});
+    pMarker=L.marker([me.lat,me.lng],{icon:L.divIcon({className:"pmark",html:'<div class="dot"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:1000}).addTo(map);
+    ring=L.circle([me.lat,me.lng],{radius:CATCH_RANGE,color:"#1e8e71",weight:2,opacity:.8,fillColor:"#5cf2c8",fillOpacity:.1}).addTo(map);
+    map.setView([me.lat,me.lng],18);
     refreshGhosts();
   }else{
-    pMarker.setLngLat([me.lng,me.lat]);
-    if(follow) map.easeTo({center:[me.lng,me.lat],duration:800});
+    pMarker.setLatLng([me.lat,me.lng]); ring.setLatLng([me.lat,me.lng]);
+    if(follow) map.panTo([me.lat,me.lng],{animate:true});
   }
-  if(mapReady) map.getSource("ring").setData(circleGeo(me.lat,me.lng,CATCH_RANGE));
 }
 function refreshGhosts(){
-  if(me.lat===null||!map) return;
+  if(me.lat===null||!gLayer) return;
   if(!NET.loading){
     if(!NET.pts && !NET.failed) loadNet(me.lat,me.lng);
     else if(NET.pts && dist(me.lat,me.lng,NET.lat,NET.lng)>500) loadNet(me.lat,me.lng);
   }
-  gMarkers.forEach(m=>m.remove()); gMarkers=[];
+  gLayer.clearLayers();
   const used=[];
   for(const g of ghostsNear(me.lat,me.lng)){
     if(NET.pts){
@@ -458,21 +474,52 @@ function refreshGhosts(){
     const d = dist(me.lat,me.lng,g.lat,g.lng);
     if(d>650) continue;
     const near = d<=CATCH_RANGE;
-    const el=document.createElement("div");
-    el.className="gmark"+(g.sp.rar==="b"?" boss":"")+((g.sp.rar==="r"||g.sp.rar==="s")?" rare":"")+(near?" near":" far");
-    const px=g.sp.rar==="b"?66:46;
-    el.style.width=px+"px"; el.style.height=px+"px";
-    el.innerHTML=ghostSVG(g.sp,px);
-    el.addEventListener("click",ev=>{
-      ev.stopPropagation();
-      const dd = dist(me.lat,me.lng,g.lat,g.lng);
-      if(dd<=CATCH_RANGE) startHunt(g);
-      else toast(`${g.sp.name} is ${fmtDist(dd)} away. Walk closer — inside your glowing ring.`);
-    });
-    gMarkers.push(new maplibregl.Marker({element:el}).setLngLat([g.lng,g.lat]).addTo(map));
+    const px = g.sp.rar==="b"?66:46;
+    const mk = L.marker([g.lat,g.lng],{icon:L.divIcon({
+      className:"gmark"+(g.sp.rar==="b"?" boss":"")+((g.sp.rar==="r"||g.sp.rar==="s")?" rare":"")+(near?" near":" far"),
+      html:ghostSVG(g.sp,px), iconSize:[px,px], iconAnchor:[px/2,px/2]
+    })}).addTo(gLayer);
+    mk.on("click",()=>openSheet(g));
   }
 }
 setInterval(refreshGhosts, 12000);
+
+/* ---------- ghost info sheet with street address ---------- */
+const addrCache={}; let sheetG=null;
+function openSheet(g){
+  sheetG=g;
+  const d=dist(me.lat,me.lng,g.lat,g.lng), inR=d<=CATCH_RANGE;
+  $("gsArt").innerHTML=ghostSVG(g.sp,80);
+  $("gsName").textContent=g.sp.name;
+  $("gsTags").innerHTML=`<span class="tag ${g.sp.rar}">${RAR_LABEL[g.sp.rar]}</span>`;
+  $("gsAddr").innerHTML=`<span class="pin">📍</span>${addrCache[g.key]||"Finding the address…"}`;
+  $("gsDist").textContent = inR ? "In range — ready to hunt" : fmtDist(d)+" away";
+  const b=$("gsBtn");
+  b.textContent = inR ? "Open camera and hunt" : "Walk closer to hunt";
+  b.classList.toggle("ghosted",!inR);
+  b.onclick=()=>{ 
+    const dd=dist(me.lat,me.lng,g.lat,g.lng);
+    if(dd<=CATCH_RANGE){ closeSheet(); startHunt(g); }
+    else toast(`Still ${fmtDist(dd)} away. Get inside your glowing ring.`);
+  };
+  $("gsWrap").classList.add("on");
+  if(!addrCache[g.key]) fetchAddr(g);
+}
+function closeSheet(){ $("gsWrap").classList.remove("on"); sheetG=null; }
+async function fetchAddr(g){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${g.lat}&lon=${g.lng}&zoom=18&addressdetails=1`,
+      {headers:{"Accept":"application/json"}});
+    const j=await r.json(); const a=j.address||{};
+    const road=a.road||a.pedestrian||a.footway||a.path||a.cycleway||"";
+    const line=[a.house_number,road].filter(Boolean).join(" ");
+    const spot=line || j.name || "Unnamed path";
+    const area=[a.neighbourhood||a.suburb||a.hamlet, a.city||a.town||a.village].filter(Boolean).join(", ");
+    addrCache[g.key]=[spot,area].filter(Boolean).join(", ");
+  }catch(e){ addrCache[g.key]="Address lookup needs a connection"; }
+  if(sheetG && sheetG.key===g.key)
+    $("gsAddr").innerHTML=`<span class="pin">📍</span>${addrCache[g.key]}`;
+}
 
 /* ---------- HUD ---------- */
 function updateHUD(){
@@ -746,6 +793,9 @@ function renderCrew(){
   };
 }
 
+$("gsClose").onclick=closeSheet;
+$("gsWrap").addEventListener("click",e=>{ if(e.target.id==="gsWrap") closeSheet(); });
+
 /* ---------- tabs ---------- */
 $("tabs2").outerHTML=""; $("tabs3").outerHTML="";
 document.querySelectorAll("#tabs .tab").forEach(t=>{
@@ -763,7 +813,7 @@ show=function(id){
   origShow(id);
   if(id==="mapScreen") $("mapScreen").appendChild(tabBar);
   else if(id==="dexScreen"||id==="crewScreen") $(id).appendChild(tabBar);
-  if(id==="mapScreen"&&map) setTimeout(()=>map.resize(),60);
+  if(id==="mapScreen"&&map) setTimeout(()=>map.invalidateSize(),60);
 };
 
 /* ---------- intro ---------- */
